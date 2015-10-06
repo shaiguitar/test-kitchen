@@ -19,6 +19,10 @@
 require "logger"
 require "net/ssh"
 require "net/scp"
+
+require "rsync"
+require "pry"
+
 require "socket"
 
 require "kitchen/errors"
@@ -27,7 +31,6 @@ require "kitchen/login_command"
 module Kitchen
 
   # Wrapped exception for any internally raised SSH-related errors.
-  #
   # @author Fletcher Nichol <fnichol@nichol.ca>
   class SSHFailed < TransientFailure; end
 
@@ -100,6 +103,8 @@ module Kitchen
           end
         }
       end
+
+      # binding.pry
 
       session.scp.upload!(local, remote, options, &progress)
     end

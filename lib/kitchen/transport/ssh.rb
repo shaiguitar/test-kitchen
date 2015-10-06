@@ -1,3 +1,19 @@
+# monky path hax to see stdout
+module Rsync
+  # An rsync command to be run
+  class Command
+    def self.run_command(cmd, &block)
+      puts cmd.inspect
+      if block_given?
+        IO.popen("#{cmd} 2>&1", &block)
+      else
+        `#{cmd} 2>&1`
+      end
+    end
+  end
+end
+
+
 # -*- encoding: utf-8 -*-
 #
 # Author:: Fletcher Nichol (<fnichol@nichol.ca>)
@@ -133,14 +149,44 @@ module Kitchen
           LoginCommand.new("ssh", args)
         end
 
+        def self.rsync(key_path, user, host)
+          Rsync.configure do |config|
+            config.host = "#{user}@#{host}"
+          end
+
+          Rsync.run("booz", "/home/shai/booz", "-Pav -e 'ssh -i #{key_path}' ") do |result|
+            puts result.inspect
+            if result.success?
+              result.changes.each do |change|
+                puts "#{change.filename} (#{change.summary})"
+              end
+            else
+              puts result.error
+            end
+          end
+        end
+
         # (see Base::Connection#upload)
         def upload(locals, remote)
           Array(locals).each do |local|
             opts = File.directory?(local) ? { :recursive => true } : {}
 
-            session.scp.upload!(local, remote, opts) do |_ch, name, sent, total|
-              logger.debug("Uploaded #{name} (#{total} bytes)") if sent == total
-            end
+            ssh_key = session.options[:keys].first
+            user = session.options[:user]
+            host = session.host
+
+            puts "DEBIG:"
+            puts local
+            puts remote
+            puts opts
+            puts "E DBG"
+
+            logger.debug("Uploading VIA RSYNC!")
+            self.class.rsync(ssh_key, user, host)
+
+            #session.scp.upload!(local, remote, opts) do |_ch, name, sent, total|
+            #  logger.debug("Uploaded #{name} (#{total} bytes)") if sent == total
+            #end
           end
         rescue Net::SSH::Exception => ex
           raise SshFailed, "SCP upload failed (#{ex.message})"
