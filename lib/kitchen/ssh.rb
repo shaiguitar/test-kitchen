@@ -31,7 +31,6 @@ require "kitchen/login_command"
 module Kitchen
 
   # Wrapped exception for any internally raised SSH-related errors.
-  #
   # @author Fletcher Nichol <fnichol@nichol.ca>
   class SSHFailed < TransientFailure; end
 
@@ -104,26 +103,10 @@ module Kitchen
           end
         }
       end
-      require 'rsync'
+
+      # binding.pry
 
       session.scp.upload!(local, remote, options, &progress)
-    end
-
-    def rsync
-      Rsync.configure do |config|
-        config.host = 'shai@shairosenfeld.com'
-      end
-
-      Rsync.run("booz", "/home/shai/booz", "-a") do |result|
-        puts result.inspect
-        if result.success?
-          result.changes.each do |change|
-            puts "#{change.filename} (#{change.summary})"
-          end
-        else
-          puts result.error
-        end
-      end
     end
 
     # Uploads a recursive directory to remote host.
